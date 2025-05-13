@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {firebaseApp, firebaseDB} from "../config/FirebaseConfig"
-import {ref, onValue, get} from "firebase/database";
+import {firebaseDB} from "../config/FirebaseConfig"
+import {ref, get} from "firebase/database";
 
 const MapPage = () => {
 
@@ -47,7 +47,7 @@ const MapPage = () => {
     }
 
     const checkParking = () => {
-        // if (data.slot1 == 1 && data.slot2 == 1) {
+        // if (data.slot1 === 1 && data.slot2 === 1) {
         //     return full_parking_style.container
         // }
 
@@ -57,13 +57,13 @@ const MapPage = () => {
         for (let temp in data) {
             let slotValue = data[temp];
             
-            if (slotValue != 1) {
+            if (slotValue !== 1) {
                 flag = false;
                 break;
             }
         }
 
-        if (flag == true) {
+        if (flag === true) {
             return full_parking_style.container
         }
 
@@ -192,7 +192,6 @@ const full_parking_style = {
         paddingTop: 20,
         zIndex: 2,
         width: 700,
-        height: "auto",
         height: 500,
         justifyContent: "center",
         opacity: 0.8
