@@ -1,6 +1,9 @@
 #include <ESP32Servo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <Firebase_ESP_Client.h>
 
 // Parking slot sensors
 #define trigPinA 12
@@ -35,6 +38,57 @@ bool isOccupiedB = false, prevStateB = false;
 unsigned long lastChangeTimeA = 0;
 unsigned long lastChangeTimeB = 0;
 
+// conf wifi
+#define WIFI_SSID "WIFI_NAME"
+#define WIFI_PASSWORD "WIFI_PASSWORD"
+WiFiClientSecure ssl_client;
+
+// conf firebase
+#define API_KEY "AIzaSyB-7wTDQa5SimmdxtpV2D9m8WOiaEQ8L14"
+#define DATABASE_URL "https://smart-parking-esp32-1c799-default-rtdb.asia-southeast1.firebasedatabase.app/"
+#define AUTH_EMAIL "daniel025@binus.ac.id"
+#define AUTH_PASS "Test123"
+
+// Objek Firebase dan Auth
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+
+//firebase path
+String path_slot_parking = "/smart-parking/slot-parking";
+String path_payment = "/smart-parking/payment";
+
+
+void initWifi() {
+  // Connect to Wi-Fi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(1000);
+    Serial.println("Menyambung ke Wi-Fi...");
+  }
+  Serial.println("Tersambung ke Wi-Fi!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // Configure SSL client
+  ssl_client.setInsecure();
+}
+
+void initFirebase() {
+  // Setup Firebase config dan API key
+  config.api_key = API_KEY;
+  config.database_url = DATABASE_URL;
+
+  //login
+  auth.user.email = AUTH_EMAIL;
+  auth.user.password = AUTH_PASS;
+
+  // Inisialisasi Firebase
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+}
+
 void setup() {
   Serial.begin(115200);
   
@@ -55,6 +109,9 @@ void setup() {
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.print("Parking System");
+
+  initWifi();
+  initFirebase();
 }
 
 void loop() {
