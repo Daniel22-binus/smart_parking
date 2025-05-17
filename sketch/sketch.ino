@@ -2,8 +2,15 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
 #include <Firebase_ESP_Client.h>
+
+// FirebaseFS.h
+#define ENABLE_RTDB
+#undef ENABLE_FIRESTORE
+#undef ENABLE_STORAGE
+#undef ENABLE_MESSAGING
+#undef ENABLE_FCM
+
 
 // OLED Setup
 #define SCREEN_WIDTH 128
@@ -22,20 +29,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LED_YELLOW 33
 #define LED_GREEN  32
 
-// Animation state
-int carX = 0;
-int carSpeed = 2;
-
-// conf wifi
-#define WIFI_SSID "Yos"
-#define WIFI_PASSWORD "12345678"
 WiFiClientSecure ssl_client;
-
-// conf firebase
-#define API_KEY "AIzaSyB-7wTDQa5SimmdxtpV2D9m8WOiaEQ8L14"
-#define DATABASE_URL "https://smart-parking-esp32-1c799-default-rtdb.asia-southeast1.firebasedatabase.app/"
-#define AUTH_EMAIL "daniel025@binus.ac.id"
-#define AUTH_PASS "Test123"
 
 // Objek Firebase dan Auth
 FirebaseData fbdo;
@@ -44,33 +38,26 @@ FirebaseConfig config;
 
 //firebase path
 String path_slot_parking = "/smart-parking/slot-parking";
-String path_payment = "/smart-parking/payment";
-
 
 void initWifi() {
   // Connect to Wi-Fi
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin("Yos", "12345678");
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(1000);
     Serial.println("Menyambung ke Wi-Fi...");
   }
   Serial.println("Tersambung ke Wi-Fi!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-
-  // Configure SSL client
-  ssl_client.setInsecure();
 }
 
 void initFirebase() {
   // Setup Firebase config dan API key
-  config.api_key = API_KEY;
-  config.database_url = DATABASE_URL;
+  config.api_key = "AIzaSyB-7wTDQa5SimmdxtpV2D9m8WOiaEQ8L14";
+  config.database_url = "https://smart-parking-esp32-1c799-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
   //login
-  auth.user.email = AUTH_EMAIL;
-  auth.user.password = AUTH_PASS;
+  auth.user.email = "daniel025@binus.ac.id";
+  auth.user.password = "Test123";
 
   // Inisialisasi Firebase
   Firebase.begin(&config, &auth);
@@ -100,8 +87,6 @@ void setup() {
 
   initWifi();
   initFirebase();
-  Firebase.RTDB.setInt(&fbdo, (path_slot_parking + "/slot1"), 0);
-  Firebase.RTDB.setInt(&fbdo, (path_slot_parking + "/slot2"), 0);
 }
 
 long readDistanceCM(int trigPin, int echoPin) {
@@ -117,26 +102,11 @@ long readDistanceCM(int trigPin, int echoPin) {
 }
 
 void updateTrafficLight(int occupied) {
-  digitalWrite(LED_RED, LOW);
-  digitalWrite(LED_YELLOW, LOW);
-  digitalWrite(LED_GREEN, LOW);
-
-  if (occupied == 0) {
-    digitalWrite(LED_GREEN, HIGH);
-  } else if (occupied == 1) {
-    digitalWrite(LED_YELLOW, HIGH);
-  } else {
-    digitalWrite(LED_RED, HIGH);
-  }
+  digitalWrite(LED_RED,    occupied == 2);
+  digitalWrite(LED_YELLOW, occupied == 1);
+  digitalWrite(LED_GREEN,  occupied == 0);
 }
 
-void drawCar(int x) {
-  // Car body
-  display.fillRoundRect(x, 40, 20, 8, 2, SSD1306_WHITE);
-  // Wheels
-  display.fillCircle(x + 4, 48, 2, SSD1306_BLACK);
-  display.fillCircle(x + 16, 48, 2, SSD1306_BLACK);
-}
 
 void loop() {
   long distA = readDistanceCM(TRIG_A, ECHO_A);
@@ -158,32 +128,20 @@ void loop() {
   }
 
   updateTrafficLight(occupied);
-
-  // Decide animation behavior
-  if (occupied < 2) {
-    carX += carSpeed;
-    if (carX > SCREEN_WIDTH) carX = -25;
-  }
-  // If full, stop car (traffic jam)
-
   // Draw display
   display.clearDisplay();
 
   // Draw status on top
   display.setCursor(0, 0);
-  display.print("Status: ");
+  display.print(F("Status: "));
   display.print(2 - occupied);
-  display.print("/2 ");
-  if (occupied == 0) display.print("(Empty)");
-  else if (occupied == 1) display.print("(1 left)");
-  else display.print("(Full)");
-
-  // Draw multiple cars for fun!
-  drawCar(carX);
-  drawCar(carX - 30);
-  drawCar(carX - 60);
+  display.print(F("/2 "));
+  if (occupied == 0) display.print(F("(Empty)"));
+  else if (occupied == 1) display.print(F("(1 left)"));
+  else display.print(F("(Full)"));
 
   display.display();
 
-  delay(150);
+
+  delay(500);
 }
